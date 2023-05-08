@@ -63,10 +63,22 @@ class GetAllInvoices(View):
         invoice_serializer = InvoiceSerializer(invoices, many=True)
         return JsonResponse(invoice_serializer.data, safe=False)
 
+class AddInvoice(View):
+    def post(self, request):
+        invoice_data = json.loads(request.body)
+        invoice_data["invoice_id"]=len(invoices)+1
+        invoice_serializer = InvoiceSerializer(data=invoice_data)
+        
+        if invoice_serializer.is_valid():
+            invoices.append(invoice_serializer.data)
+            return JsonResponse(invoice_serializer.data, status=201)
+        else:
+            return HttpResponseBadRequest()
+
 class GetInvoice(View):
     def get(self, request, invoice_id):
         for invoice in invoices:
-            if invoice["id"] == invoice_id:
+            if invoice["invoice_id"] == invoice_id:
                 invoice_serializer = InvoiceSerializer(invoice)
                 return JsonResponse(invoice_serializer.data, safe=False)
         return JsonResponse({"error": "Invoice not found"}, status=404)
@@ -80,28 +92,21 @@ class InvoiceItemGet(View):
                         return JsonResponse(item, status=200)
         return HttpResponseBadRequest()
 
-class InvoiceItemUpdate(View):
-    def put(self, request, item_id):
+class InvoiceItemAdd(View):
+    def post(self, request, invoice_id):
         #Parse data from req.body.
         item_data=json.loads(request.body)
+        item_data["invoice_id"]=invoice_id
         #Validate data
         item_serialized=InvoiceItemSerializer(data=item_data)
         if(item_serialized.is_valid()):
             # Find the invoice to update
-            item_to_update=None
             for index, invoice in enumerate(invoices):
-                if(invoice["invoice_id"]==item_data["invoice_id"]):
-                    for item_index, item in enumerate(invoice.items):
-                        if(item["item_id"]==item_id):
-                            item_to_update=item
-                            break
+                if(invoice["invoice_id"]==invoice_id):
+                    invoice["items"].append(item_serialized.data)
+                    break
             
-            # if data found, update it.
-            if(item_to_update):
-                invoices[index].items[item_index]=item_serialized.data
-                return JsonResponse(item_serialized.data, status=200)
-            
-        return HttpResponseBadRequest()
+        return JsonResponse(item_serialized.data, status=200)
 
 class UserSignUp(View):
     def post(self, request):
