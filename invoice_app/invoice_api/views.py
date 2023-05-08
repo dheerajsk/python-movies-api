@@ -94,17 +94,22 @@ class InvoiceItemGet(View):
 
 class InvoiceItemAdd(View):
     def post(self, request, invoice_id):
+        
         #Parse data from req.body.
         item_data=json.loads(request.body)
         item_data["invoice_id"]=invoice_id
         #Validate data
-        item_serialized=InvoiceItemSerializer(data=item_data)
-        if(item_serialized.is_valid()):
+        print("ok")
             # Find the invoice to update
-            for index, invoice in enumerate(invoices):
-                if(invoice["invoice_id"]==invoice_id):
+        for index, invoice in enumerate(invoices):
+            if(invoice["invoice_id"]==invoice_id):
+                item_data["item_id"]=len(invoice["items"])+1
+                item_serialized=InvoiceItemSerializer(data=item_data)
+                if(item_serialized.is_valid()):
+                    
                     invoice["items"].append(item_serialized.data)
-                    break
+                    print(invoice)
+                break
             
         return JsonResponse(item_serialized.data, status=200)
 
