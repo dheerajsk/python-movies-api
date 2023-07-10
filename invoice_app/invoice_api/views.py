@@ -1,8 +1,15 @@
 from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.views import View
 from django.http import JsonResponse, Http404, HttpResponseBadRequest
-from .serializers import InvoiceItemSerializer, InvoiceSerializer, UserSerializer
+from .serializers import ItemSerializer, InvoiceSerializer, UserSerializer
 import json
+import jwt
+import datetime
+from bson import ObjectId
+from django.conf import settings
+from .models import User, Invoice
+from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
 
@@ -60,68 +67,57 @@ invoices = [
 
 class GetAllInvoices(View):
     def get(self, request):
+        invoices = Invoice.objects.all()
         invoice_serializer = InvoiceSerializer(invoices, many=True)
         return JsonResponse(invoice_serializer.data, safe=False)
 
 class AddInvoice(View):
     def post(self, request):
         invoice_data = json.loads(request.body)
-        invoice_data["invoice_id"]=len(invoices)+1
+        invoice_data["invoice_id"]= Invoice.objects.count() + 1
+
         invoice_serializer = InvoiceSerializer(data=invoice_data)
-        
         if invoice_serializer.is_valid():
-            invoices.append(invoice_serializer.data)
-            return JsonResponse(invoice_serializer.data, status=201)
+            invoice = invoice_serializer.save()  # This will save the data to the database and return the saved instance
+            saved_invoice_serializer = InvoiceSerializer(invoice)
+            return JsonResponse(saved_invoice_serializer.data, status=201)
         else:
             return HttpResponseBadRequest()
 
 class GetInvoice(View):
     def get(self, request, invoice_id):
-        for invoice in invoices:
-            if invoice["invoice_id"] == invoice_id:
-                invoice_serializer = InvoiceSerializer(invoice)
-                return JsonResponse(invoice_serializer.data, safe=False)
-        return JsonResponse({"error": "Invoice not found"}, status=404)
-    
-class InvoiceItemGet(View):
-    def put(self, request, invoice_id, item_id):
-        for index, invoice in enumerate(invoices):
-            if invoice["invoice_id"] == invoice_id:
-                for item_index, item in enumerate(invoice['items']):
-                    if item["item_id"] == item_id:
-                        return JsonResponse(item, status=200)
-        return HttpResponseBadRequest()
+        try:
+            invoice = Invoice.objects.get(_id=ObjectId(invoice_id))
+        except ObjectDoesNotExist:
+            return JsonResponse({"error": "Invoice not found"}, status=404)
+        
+        invoice_serializer = InvoiceSerializer(invoice)
+        return JsonResponse(invoice_serializer.data, safe=False)
 
 class InvoiceItemAdd(View):
     def post(self, request, invoice_id):
-        
-        #Parse data from req.body.
-        item_data=json.loads(request.body)
-        item_data["invoice_id"]=invoice_id
-        #Validate data
-        print("ok")
-            # Find the invoice to update
-        for index, invoice in enumerate(invoices):
-            if(invoice["invoice_id"]==invoice_id):
-                item_data["item_id"]=len(invoice["items"])+1
-                item_serialized=InvoiceItemSerializer(data=item_data)
-                if(item_serialized.is_valid()):
-                    
-                    invoice["items"].append(item_serialized.data)
-                    print(invoice)
-                break
-            
-        return JsonResponse(item_serialized.data, status=200)
+        invoice_id = ObjectId(invoice_id)
+        invoice = get_object_or_404(Invoice, _id=ObjectId(invoice_id))
+
+        item_data = json.loads(request.body)
+        item_data['invoice_id'] = ObjectId(invoice._id)
+        item_serializer = ItemSerializer(data=item_data)
+
+        if item_serializer.is_valid():
+            item = item_serializer.save()
+            return JsonResponse(ItemSerializer(item).data, status=201)
+        else:
+            return HttpResponseBadRequest()
+
 
 class UserSignUp(View):
     def post(self, request):
         user_data=json.loads(request.body)
-        user_data["user_id"]=len(users)+1
         
         #Validate data using serializer
         user_serialized=UserSerializer(data=user_data)
         if(user_serialized.is_valid()):
-            users.append(user_serialized.data)
+            user_instance = user_serialized.save()
 
             return JsonResponse(user_serialized.data, status=201)
         else:
@@ -129,10 +125,23 @@ class UserSignUp(View):
 
 class UserSignIn(View):
     def post(self, request):
-        user_data=json.loads(request.body)
-        print(user_data)
-        print(user_data["email"])
-        for index, item in enumerate(users):
-                if(item["email"]==user_data["email"] and item["password"]==user_data["password"]):
-                    return JsonResponse("Login is Successful", safe=False,status=200)
-        return HttpResponseBadRequest()
+        user_data = json.loads(request.body)
+        try:
+            # Fetch user from database
+            user = User.objects.get(email=user_data["email"])
+        except User.DoesNotExist:
+            # User not found in database
+            return HttpResponseBadRequest()
+
+        # Check password - this should be improved because storing and comparing passwords as plain text is not secure
+        if user.password == user_data["password"]:
+            # Generate a token with the user's email and an expiration time
+            token = jwt.encode({
+                'email': user.email,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)  # Expiration time
+            }, settings.SECRET_KEY, algorithm='HS256')
+
+            return JsonResponse({"token": token}, status=200)
+        else:
+            # Password didn't match
+            return HttpResponseBadRequest()
