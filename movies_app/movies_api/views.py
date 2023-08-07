@@ -95,6 +95,8 @@ class SeatSelection(View):
                 seat.save()
 
         # Create a booking summary and save it to the database
+        
+        
         # You can customize this part based on your specific requirements
 
         # After successful booking, redirect to the booking summary page
