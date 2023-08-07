@@ -2,21 +2,28 @@ from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.views import View
 from django.http import JsonResponse, Http404, HttpResponseBadRequest
-from .serializers import ItemSerializer, InvoiceSerializer, UserSerializer
+from .serializers import ItemSerializer,  UserSerializer
 import json
 import jwt
 import datetime
 from bson import ObjectId
 from django.conf import settings
-from .models import User, Invoice,Movie,Screening
+from .models import User, Movie,Screening
 from django.core.exceptions import ObjectDoesNotExist
 from .models import Ticket
 from .serializers import TicketSerializer
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views import View
+from .models import Booking
+from .serializers import BookingSerializer
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.views import View
+from .models import Seat
+from .serializers import SeatSerializer
 
 # Create your views here.
 
 users=[]
-
 movies = [
     {
         "title": "Movie A",
@@ -64,125 +71,6 @@ movies = [
         "rating": "PG",
     },
 ]
-
-
-class MovieList(View):
-    def get(self, request):
-        movies = Movie.objects.all()
-        return render(request, 'movie_list.html', {'movies': movies})
-
-class SeatSelection(View):
-    def get(self, request, screening_id):
-        screening = get_object_or_404(Screening, pk=screening_id)
-        seats = Seat.objects.filter(screening=screening)
-
-        # Render the seat selection page with the available seats for the selected screening
-        return render(request, 'seat_selection.html', {'screening': screening, 'seats': seats})
-
-    def post(self, request, screening_id):
-        screening = get_object_or_404(Screening, pk=screening_id)
-        seats_data = json.loads(request.body)
-
-        selected_seats = []
-        total_cost = 0
-
-        for seat_id in seats_data:
-            seat = get_object_or_404(Seat, pk=seat_id)
-            if seat.is_available:
-                selected_seats.append(seat)
-                total_cost += seat.price
-                seat.is_available = False
-                seat.save()
-
-        # Create a booking summary and save it to the database
-        
-        
-        # You can customize this part based on your specific requirements
-
-        # After successful booking, redirect to the booking summary page
-        return redirect('booking_summary', booking_id=booking_id)
-
-class BookingSummary(View):
-    def get(self, request, booking_id):
-        # Fetch the booking summary from the database based on the booking_id
-        # You can customize this part based on your specific requirements
-
-        # Render the booking summary page with the details of the booking
-        return render(request, 'booking_summary.html', {'booking_summary': booking_summary})
-
-# Other views for user registration, login, and profile can be added as needed.
-
-
-class MovieFiltering(View):
-    def get(self, request):
-        genre = request.GET.get('genre')
-        language = request.GET.get('language')
-        location = request.GET.get('location')
-        rating = request.GET.get('rating')
-
-        movies = Movie.objects.all()
-
-        if genre:
-            movies = movies.filter(genre=genre)
-
-        if language:
-            movies = movies.filter(language=language)
-
-        if location:
-            # Apply location filtering logic here if you have it as a field in the Movie model
-            pass
-
-        if rating:
-            movies = movies.filter(rating=rating)
-
-        # Render the filtered movies on the webpage or template
-        return render(request, 'movie_filtering.html', {'movies': movies})
-
-
-# class GetAllInvoices(View):
-#     def get(self, request):
-#         invoices = Invoice.objects.all()
-#         invoice_serializer = InvoiceSerializer(invoices, many=True)
-#         return JsonResponse(invoice_serializer.data, safe=False)
-
-# class AddInvoice(View):
-#     def post(self, request):
-#         invoice_data = json.loads(request.body)
-#         invoice_data["invoice_id"]= Invoice.objects.count() + 1
-
-#         invoice_serializer = InvoiceSerializer(data=invoice_data)
-#         if invoice_serializer.is_valid():
-#             invoice = invoice_serializer.save()  # This will save the data to the database and return the saved instance
-#             saved_invoice_serializer = InvoiceSerializer(invoice)
-#             return JsonResponse(saved_invoice_serializer.data, status=201)
-#         else:
-#             return HttpResponseBadRequest()
-
-# class GetInvoice(View):
-#     def get(self, request, invoice_id):
-#         try:
-#             invoice = Invoice.objects.get(_id=ObjectId(invoice_id))
-#         except ObjectDoesNotExist:
-#             return JsonResponse({"error": "Invoice not found"}, status=404)
-        
-#         invoice_serializer = InvoiceSerializer(invoice)
-#         return JsonResponse(invoice_serializer.data, safe=False)
-
-# class InvoiceItemAdd(View):
-#     def post(self, request, invoice_id):
-#         invoice_id = ObjectId(invoice_id)
-#         invoice = get_object_or_404(Invoice, _id=ObjectId(invoice_id))
-
-#         item_data = json.loads(request.body)
-#         item_data['invoice_id'] = ObjectId(invoice._id)
-#         item_serializer = ItemSerializer(data=item_data)
-
-#         if item_serializer.is_valid():
-#             item = item_serializer.save()
-#             return JsonResponse(ItemSerializer(item).data, status=201)
-#         else:
-#             return HttpResponseBadRequest()
-
 
 class UserSignUp(View):
     def post(self, request):
@@ -316,12 +204,6 @@ class TicketsAPI(View):
         else:
             return HttpResponseBadRequest()
 
-
-from django.http import JsonResponse, HttpResponseBadRequest
-from django.views import View
-from .models import Seat
-from .serializers import SeatSerializer
-
 class SeatsAPI(View):
     def get(self, request, movie_id):
         # Implement fetching all seats for a specific movie
@@ -366,13 +248,22 @@ class SeatsAPI(View):
         else:
             return HttpResponseBadRequest()
 
+
+
 class BookingAPI(View):
     def get(self, request, booking_id):
         # Implement fetching booking summary for a specific booking_id
         # You can add authentication and authorization checks here if needed
 
-        # Fetch the booking summary from the database based on the booking_id
-        # You can use serializers to convert the data to JSON format
+        try:
+            # Fetch the booking summary from the database based on the booking_id
+            booking = Booking.objects.get(pk=booking_id)
+        except Booking.DoesNotExist:
+            return JsonResponse({"error": "Booking not found"}, status=404)
+
+        # Serialize the data using BookingSerializer
+        booking_serializer = BookingSerializer(booking)
+        booking_summary_data = booking_serializer.data
 
         return JsonResponse(booking_summary_data, status=200)
 
@@ -383,5 +274,10 @@ class BookingAPI(View):
 
         # Validate the booking data, check seat availability, and save the booking details to the database
         # You can use serializers to validate and save the data
+        booking_serializer = BookingSerializer(data=booking_data)
 
-        return JsonResponse({"message": "Booking created successfully"}, status=201)
+        if booking_serializer.is_valid():
+            booking_serializer.save()
+            return JsonResponse({"message": "Booking created successfully"}, status=201)
+        else:
+            return HttpResponseBadRequest()

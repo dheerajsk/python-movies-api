@@ -9,7 +9,7 @@ import djongo.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('invoice_api', '0001_initial'),
+        ('movies_api', '0001_initial'),
     ]
 
     operations = [
