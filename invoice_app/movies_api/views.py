@@ -8,7 +8,7 @@ import jwt
 import datetime
 from bson import ObjectId
 from django.conf import settings
-from .models import User, Invoice
+from .models import User, Invoice,Movie
 from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
@@ -64,50 +64,81 @@ invoices = [
     },
 ]
 
-
-class GetAllInvoices(View):
+class MovieDisplay(View):
     def get(self, request):
-        invoices = Invoice.objects.all()
-        invoice_serializer = InvoiceSerializer(invoices, many=True)
-        return JsonResponse(invoice_serializer.data, safe=False)
+        movies = Movie.objects.all()
+        # Render the movies on the webpage or template and provide a link to the detailed Movie Details Page for each movie
+        return render(request, 'movie_display.html', {'movies': movies})
 
-class AddInvoice(View):
-    def post(self, request):
-        invoice_data = json.loads(request.body)
-        invoice_data["invoice_id"]= Invoice.objects.count() + 1
+class MovieFiltering(View):
+    def get(self, request):
+        genre = request.GET.get('genre')
+        language = request.GET.get('language')
+        location = request.GET.get('location')
+        rating = request.GET.get('rating')
 
-        invoice_serializer = InvoiceSerializer(data=invoice_data)
-        if invoice_serializer.is_valid():
-            invoice = invoice_serializer.save()  # This will save the data to the database and return the saved instance
-            saved_invoice_serializer = InvoiceSerializer(invoice)
-            return JsonResponse(saved_invoice_serializer.data, status=201)
-        else:
-            return HttpResponseBadRequest()
+        movies = Movie.objects.all()
 
-class GetInvoice(View):
-    def get(self, request, invoice_id):
-        try:
-            invoice = Invoice.objects.get(_id=ObjectId(invoice_id))
-        except ObjectDoesNotExist:
-            return JsonResponse({"error": "Invoice not found"}, status=404)
+        if genre:
+            movies = movies.filter(genre=genre)
+
+        if language:
+            movies = movies.filter(language=language)
+
+        if location:
+            # Apply location filtering logic here if you have it as a field in the Movie model
+            pass
+
+        if rating:
+            movies = movies.filter(rating=rating)
+
+        # Render the filtered movies on the webpage or template
+        return render(request, 'movie_filtering.html', {'movies': movies})
+
+
+# class GetAllInvoices(View):
+#     def get(self, request):
+#         invoices = Invoice.objects.all()
+#         invoice_serializer = InvoiceSerializer(invoices, many=True)
+#         return JsonResponse(invoice_serializer.data, safe=False)
+
+# class AddInvoice(View):
+#     def post(self, request):
+#         invoice_data = json.loads(request.body)
+#         invoice_data["invoice_id"]= Invoice.objects.count() + 1
+
+#         invoice_serializer = InvoiceSerializer(data=invoice_data)
+#         if invoice_serializer.is_valid():
+#             invoice = invoice_serializer.save()  # This will save the data to the database and return the saved instance
+#             saved_invoice_serializer = InvoiceSerializer(invoice)
+#             return JsonResponse(saved_invoice_serializer.data, status=201)
+#         else:
+#             return HttpResponseBadRequest()
+
+# class GetInvoice(View):
+#     def get(self, request, invoice_id):
+#         try:
+#             invoice = Invoice.objects.get(_id=ObjectId(invoice_id))
+#         except ObjectDoesNotExist:
+#             return JsonResponse({"error": "Invoice not found"}, status=404)
         
-        invoice_serializer = InvoiceSerializer(invoice)
-        return JsonResponse(invoice_serializer.data, safe=False)
+#         invoice_serializer = InvoiceSerializer(invoice)
+#         return JsonResponse(invoice_serializer.data, safe=False)
 
-class InvoiceItemAdd(View):
-    def post(self, request, invoice_id):
-        invoice_id = ObjectId(invoice_id)
-        invoice = get_object_or_404(Invoice, _id=ObjectId(invoice_id))
+# class InvoiceItemAdd(View):
+#     def post(self, request, invoice_id):
+#         invoice_id = ObjectId(invoice_id)
+#         invoice = get_object_or_404(Invoice, _id=ObjectId(invoice_id))
 
-        item_data = json.loads(request.body)
-        item_data['invoice_id'] = ObjectId(invoice._id)
-        item_serializer = ItemSerializer(data=item_data)
+#         item_data = json.loads(request.body)
+#         item_data['invoice_id'] = ObjectId(invoice._id)
+#         item_serializer = ItemSerializer(data=item_data)
 
-        if item_serializer.is_valid():
-            item = item_serializer.save()
-            return JsonResponse(ItemSerializer(item).data, status=201)
-        else:
-            return HttpResponseBadRequest()
+#         if item_serializer.is_valid():
+#             item = item_serializer.save()
+#             return JsonResponse(ItemSerializer(item).data, status=201)
+#         else:
+#             return HttpResponseBadRequest()
 
 
 class UserSignUp(View):
