@@ -1,5 +1,5 @@
 """
-WSGI config for invoice_app project.
+WSGI config for movies_app project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'invoice_app.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'movies_app.settings')
 
 application = get_wsgi_application()
