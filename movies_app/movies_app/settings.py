@@ -105,7 +105,7 @@ WSGI_APPLICATION = 'movies_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'movies',
+        'NAME': 'moviesDB',
     }
 }
 

@@ -1,5 +1,4 @@
 from django.db import models
-from django.db import models
 from djongo import models as djongo_models
 
 class User(models.Model):
@@ -9,6 +8,7 @@ class User(models.Model):
     name=models.CharField(max_length=100)
 
 class Movie(models.Model):
+    _id = djongo_models.ObjectIdField()
     title = models.CharField(max_length=100)
     director = models.CharField(max_length=100)
     starring_actors = models.CharField(max_length=255)
@@ -16,6 +16,7 @@ class Movie(models.Model):
     genre = models.CharField(max_length=50)
     language = models.CharField(max_length=50)
     rating = models.CharField(max_length=10)
+    imageUrl = models.CharField(max_length=500)
 
     def __str__(self):
         return self.title
@@ -39,3 +40,11 @@ class Seat(models.Model):
     def __str__(self):
         return f"Screening: {self.screening}, Seat: {self.seat_number}, Type: {self.seat_type}, Price: {self.price}"
 
+class Ticket(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    screening = models.ForeignKey(Screening, on_delete=models.CASCADE)
+    seats = models.ManyToManyField(Seat)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"User: {self.user}, Screening: {self.screening}, Total Price: {self.total_price}"

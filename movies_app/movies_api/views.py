@@ -14,8 +14,6 @@ from .models import Ticket
 from .serializers import TicketSerializer
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views import View
-from .models import Booking
-from .serializers import BookingSerializer
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views import View
 from .models import Seat
@@ -24,54 +22,6 @@ from .serializers import SeatSerializer
 # Create your views here.
 
 users=[]
-movies = [
-    {
-        "title": "Movie A",
-        "director": "Director A",
-        "starring_actors": "Actor A, Actor B",
-        "runtime": 120,
-        "genre": "Action",
-        "language": "English",
-        "rating": "PG-13",
-    },
-    {
-        "title": "Movie B",
-        "director": "Director B",
-        "starring_actors": "Actor C, Actor D",
-        "runtime": 105,
-        "genre": "Comedy",
-        "language": "Spanish",
-        "rating": "PG",
-    },
-    {
-        "title": "Movie C",
-        "director": "Director C",
-        "starring_actors": "Actor E, Actor F",
-        "runtime": 140,
-        "genre": "Drama",
-        "language": "German",
-        "rating": "R",
-    },
-    {
-        "title": "Movie D",
-        "director": "Director D",
-        "starring_actors": "Actor G, Actor H",
-        "runtime": 110,
-        "genre": "Thriller",
-        "language": "English",
-        "rating": "PG-13",
-    },
-    {
-        "title": "Movie E",
-        "director": "Director E",
-        "starring_actors": "Actor I, Actor J",
-        "runtime": 125,
-        "genre": "Romance",
-        "language": "French",
-        "rating": "PG",
-    },
-]
-
 
 class UserSignUp(View):
     def post(self, request):
@@ -134,6 +84,29 @@ class MoviesAPI(View):
             movies = movies.filter(rating=rating)
 
         movie_data = [{
+            "id": movie._id,
+            "title": movie.title,
+            "director": movie.director,
+            "starring_actors": movie.starring_actors,
+            "runtime": movie.runtime,
+            "genre": movie.genre,
+            "language": movie.language,
+            "rating": movie.rating,
+            "imageUrl": movie.imageUrl
+            
+        } for movie in movies]
+
+        return JsonResponse(movie_data, status=200, safe=False)
+
+   
+class MovieDetailAPI(View):
+    def get(self, request, movie_id):
+        try:
+            movie = Movie.objects.get(pk=movie_id)
+        except Movie.DoesNotExist:
+            raise Http404("Movie not found.")
+
+        movie_data = {
             "id": movie.id,
             "title": movie.title,
             "director": movie.director,
@@ -141,41 +114,12 @@ class MoviesAPI(View):
             "runtime": movie.runtime,
             "genre": movie.genre,
             "language": movie.language,
-            "rating": movie.rating
-        } for movie in movies]
+            "rating": movie.rating,
+            "imageUrl": movie.imageUrl
+        }
 
-        return JsonResponse(movie_data, status=200, safe=False)
-
-    def post(self, request):
-        # Implement adding a new movie (admin-only)
-        # You can add authentication and authorization checks here to ensure only admins can add new movies
-        movie_data = json.loads(request.body)
-
-        # Validate and save the movie data to the database
-        # You can use serializers to validate and save the data
-
-        return JsonResponse({"message": "Movie added successfully"}, status=201)
-
-    def put(self, request, movie_id):
-        # Implement updating an existing movie (admin-only)
-        # You can add authentication and authorization checks here to ensure only admins can update movies
-        movie_data = json.loads(request.body)
-
-        # Fetch the movie by movie_id and update its fields with the new data
-        # You can use serializers to validate and save the updated data
-
-        return JsonResponse({"message": "Movie updated successfully"}, status=200)
-
-    def delete(self, request, movie_id):
-        # Implement deleting an existing movie (admin-only)
-        # You can add authentication and authorization checks here to ensure only admins can delete movies
-
-        # Fetch the movie by movie_id and delete it
-        # You can use serializers to validate and delete the movie
-
-        return JsonResponse({"message": "Movie deleted successfully"}, status=200)
-
-
+        return JsonResponse(movie_data, status=200)
+    
 class TicketsAPI(View):
     def get(self, request):
         # Implement fetching all booked tickets
@@ -246,39 +190,5 @@ class SeatsAPI(View):
         if seat_serializer.is_valid():
             seat_serializer.save()
             return JsonResponse({"message": "Seat reservation updated successfully"}, status=200)
-        else:
-            return HttpResponseBadRequest()
-
-
-
-class BookingAPI(View):
-    def get(self, request, booking_id):
-        # Implement fetching booking summary for a specific booking_id
-        # You can add authentication and authorization checks here if needed
-
-        try:
-            # Fetch the booking summary from the database based on the booking_id
-            booking = Booking.objects.get(pk=booking_id)
-        except Booking.DoesNotExist:
-            return JsonResponse({"error": "Booking not found"}, status=404)
-
-        # Serialize the data using BookingSerializer
-        booking_serializer = BookingSerializer(booking)
-        booking_summary_data = booking_serializer.data
-
-        return JsonResponse(booking_summary_data, status=200)
-
-    def post(self, request):
-        # Implement creating a new booking
-        # You can add authentication and authorization checks here if needed
-        booking_data = json.loads(request.body)
-
-        # Validate the booking data, check seat availability, and save the booking details to the database
-        # You can use serializers to validate and save the data
-        booking_serializer = BookingSerializer(data=booking_data)
-
-        if booking_serializer.is_valid():
-            booking_serializer.save()
-            return JsonResponse({"message": "Booking created successfully"}, status=201)
         else:
             return HttpResponseBadRequest()

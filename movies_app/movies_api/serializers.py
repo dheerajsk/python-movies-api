@@ -1,26 +1,7 @@
 from rest_framework import serializers
-from .models import User, Item,Movie,Screening,Seat
+from .models import User, Movie,Screening,Seat,Ticket
 from rest_framework import serializers
 
-
-class MovieSerializer(serializers.Serializer):
-    title = serializers.CharField(max_length=100)
-    director = serializers.CharField(max_length=100)
-    starring_actors = serializers.CharField(max_length=255)
-    runtime = serializers.IntegerField()
-    genre = serializers.CharField(max_length=50)
-    language = serializers.CharField(max_length=50)
-    rating = serializers.CharField(max_length=10)    
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=User
-        fields='__all__'
-
-class ItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Item
-        fields = ('_id','desc', 'quantity', 'rate')
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 class MovieSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
-        fields = ('id', 'title', 'director', 'starring_actors', 'runtime', 'genre', 'language', 'rating')
+        fields = ('_id', 'title', 'director', 'starring_actors', 'runtime', 'genre', 'language', 'rating', 'imageUrl')
 
 class ScreeningSerializer(serializers.ModelSerializer):
     movie = MovieSerializer()
@@ -46,3 +27,11 @@ class SeatSerializer(serializers.ModelSerializer):
         model = Seat
         fields = ('id', 'screening', 'seat_number', 'seat_type', 'price', 'is_available')
 
+class TicketSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    screening = ScreeningSerializer()
+    seats = SeatSerializer(many=True)
+
+    class Meta:
+        model = Ticket
+        fields = ('id', 'user', 'screening', 'seats', 'total_price')
