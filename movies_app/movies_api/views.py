@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.views import View
 from django.http import JsonResponse, Http404, HttpResponseBadRequest
-from .serializers import ItemSerializer,  UserSerializer
+from .serializers import UserSerializer
 import json
 import jwt
 import datetime
@@ -71,6 +71,7 @@ movies = [
         "rating": "PG",
     },
 ]
+
 
 class UserSignUp(View):
     def post(self, request):
