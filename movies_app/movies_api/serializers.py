@@ -18,14 +18,14 @@ class ScreeningSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Screening
-        fields = ('id', 'movie', 'date', 'time', 'available_seats')
+        fields = ('_id', 'movie', 'date', 'time', 'available_seats')
 
 class SeatSerializer(serializers.ModelSerializer):
     screening = ScreeningSerializer()
 
     class Meta:
         model = Seat
-        fields = ('id', 'screening', 'seat_number', 'seat_type', 'price', 'is_available')
+        fields = ('_id', 'screening', 'seat_number', 'seat_type', 'price', 'is_available')
 
 class TicketSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -34,4 +34,4 @@ class TicketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ticket
-        fields = ('id', 'user', 'screening', 'seats', 'total_price')
+        fields = ('_id', 'user', 'screening', 'seats', 'total_price')

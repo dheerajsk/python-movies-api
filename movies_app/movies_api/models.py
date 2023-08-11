@@ -22,6 +22,7 @@ class Movie(models.Model):
         return self.title
 
 class Screening(models.Model):
+    _id = djongo_models.ObjectIdField()
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
     date = models.DateField()
     time = models.TimeField()
@@ -31,6 +32,7 @@ class Screening(models.Model):
         return f"{self.movie.title} - {self.date} {self.time}"
 
 class Seat(models.Model):
+    _id = djongo_models.ObjectIdField()
     screening = models.ForeignKey(Screening, on_delete=models.CASCADE)
     seat_number = models.CharField(max_length=10)
     seat_type = models.CharField(max_length=20)  # Regular, Premium, etc.
@@ -41,6 +43,7 @@ class Seat(models.Model):
         return f"Screening: {self.screening}, Seat: {self.seat_number}, Type: {self.seat_type}, Price: {self.price}"
 
 class Ticket(models.Model):
+    _id = djongo_models.ObjectIdField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     screening = models.ForeignKey(Screening, on_delete=models.CASCADE)
     seats = models.ManyToManyField(Seat)

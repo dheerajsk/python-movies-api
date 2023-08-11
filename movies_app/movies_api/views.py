@@ -84,7 +84,7 @@ class MoviesAPI(View):
             movies = movies.filter(rating=rating)
 
         movie_data = [{
-            "id": movie._id,
+            "id": str(movie._id),
             "title": movie.title,
             "director": movie.director,
             "starring_actors": movie.starring_actors,
