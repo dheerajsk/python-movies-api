@@ -1,3 +1,4 @@
+import bson
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.views import View
@@ -17,7 +18,7 @@ from django.views import View
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views import View
 from .models import Seat
-from .serializers import SeatSerializer
+from .serializers import SeatSerializer,MovieSerializer
 
 # Create your views here.
 
@@ -102,23 +103,33 @@ class MoviesAPI(View):
 class MovieDetailAPI(View):
     def get(self, request, movie_id):
         try:
-            movie = Movie.objects.get(pk=movie_id)
-        except Movie.DoesNotExist:
-            raise Http404("Movie not found.")
+            movie = Movie.objects.get(_id=ObjectId(movie_id))
+        except ObjectDoesNotExist:
+            return JsonResponse({"error": "Invoice not found"}, status=404)
+        
+        movie_serializer = MovieSerializer(movie) 
+        return JsonResponse(movie_serializer.data, safe=False)
 
-        movie_data = {
-            "id": movie.id,
-            "title": movie.title,
-            "director": movie.director,
-            "starring_actors": movie.starring_actors,
-            "runtime": movie.runtime,
-            "genre": movie.genre,
-            "language": movie.language,
-            "rating": movie.rating,
-            "imageUrl": movie.imageUrl
-        }
+    # def get(self, request, movie_id):
+    #     movies = Movie.objects.all()
+    #     print(movies)
+    #     for movie in movies:
+    #         print(movie)
+    #         if movie["_id"] == movie_id:
+    #             movie_serializer = MovieSerializer(movie)               
+    #         return JsonResponse(movie_serializer.data, status=200, safe=False)
+    #     return JsonResponse({"error": "Movie not found"}, status=404)
+    # def get(self, request, movie_id):
+        
+    #     try:
+    #         movie_id = bson.ObjectId(movie_id)
+    #         movie = Movie.objects.get(_id=movie_id)
+    #         movie_serializer = MovieSerializer(movie, many=True)
+    #         movie_data = movie_serializer.data
+    #         return JsonResponse(movie_data, status=200, safe=False)
+    #     except Movie.DoesNotExist:
+    #         return JsonResponse({"error": "Movie not found"}, status=404)
 
-        return JsonResponse(movie_data, status=200)
     
 class TicketsAPI(View):
     def get(self, request):
